@@ -5,6 +5,7 @@ from django.urls import reverse
 from .models import Choice, Question
 from django.views import generic
 from django.utils import timezone
+from django.db.models import Count
 
 # def index(request):
 #   return HttpResponse("Hello, world. You're at the polls index.")
@@ -76,7 +77,8 @@ class IndexView(generic.ListView):
     def get_queryset(self):
         """Return the last five published questions."""
         # return Question.objects.order_by("-pub_date")[:5]
-        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
+        return Question.objects.filter(pub_date__lte=timezone.now()).annotate(choice_count=Count('choice')).filter(choice_count__gt=0).order_by("-pub_date")[:5]
+                               
 
 class DetailView(generic.DetailView):
     model = Question
@@ -96,3 +98,4 @@ class ResultsView(generic.DetailView):
         Excludes any questions that aren't published yet.
         """
         return Question.objects.filter(pub_date__lte=timezone.now())
+    
