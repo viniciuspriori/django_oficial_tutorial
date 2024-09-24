@@ -60,6 +60,7 @@ class QuestionIndexViewTests(TestCase):
         index page.
         """
         question = create_question(question_text="Past question.", days=-30)
+        question.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
         response = self.client.get(reverse("polls:index"))
         self.assertQuerySetEqual(
             response.context["latest_question_list"],
@@ -82,7 +83,9 @@ class QuestionIndexViewTests(TestCase):
         are displayed.
         """
         question = create_question(question_text="Past question.", days=-30)
-        create_question(question_text="Future question.", days=30)
+        question.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
+        question2 = create_question(question_text="Future question.", days=30)
+        question2.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
         response = self.client.get(reverse("polls:index"))
         self.assertQuerySetEqual(
             response.context["latest_question_list"],
@@ -95,7 +98,9 @@ class QuestionIndexViewTests(TestCase):
         """
         question1 = create_question(question_text="Past question 1.", days=-30)
         question2 = create_question(question_text="Past question 2.", days=-5)
-        response = self.client.get(reverse("polls:index"))
+        question1.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
+        question2.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
+        response = self.client.get(reverse("polls:index")) 
         self.assertQuerySetEqual(
             response.context["latest_question_list"],
             [question2, question1],
@@ -142,3 +147,21 @@ class QuestionResultsViewTests(TestCase):
             url = reverse("polls:results", args=(past_question.id,)) # type: ignore
             response = self.client.get(url)
             self.assertContains(response, past_question.question_text)
+
+class ChoiceIndexViewTests(TestCase):
+    def test_question_without_choice(self):
+        past_question = create_question(question_text="Past Question.", days=-5)
+        url = reverse("polls:index") # type: ignore
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No polls are available.")
+
+    def test_question_with_choice(self):
+        question = create_question(question_text="Past Question.", days=-5)
+        question.choice_set.create(choice_text="Not much", votes=0) # type: ignore 
+        url = reverse("polls:index") # type: ignore
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, question.question_text)
+
+
